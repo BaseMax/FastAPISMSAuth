@@ -1,6 +1,6 @@
-# Fast API Authentication
+# Fast API SMS Authentication
 
-This is a simple example of how to use FastAPI to create a simple authentication system based on phone number with SMS verification. (Login, Register, Auth, Panel, Whoiam, Hi)
+This is a simple example of how to use FastAPI to create a simple authentication system based on phone number with SMS verification. We used SQLite as a database. (Login, Register, Auth, Panel, Whoiam, Hi)
 
 ## Routes
 
