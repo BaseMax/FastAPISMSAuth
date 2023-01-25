@@ -1,12 +1,13 @@
-from fastapi import Header, FastAPI, HTTPException
-from pydantic import BaseModel,validator
+import uuid
 import random
 import sqlite3
-import uuid
 import requests
+from pydantic import BaseModel, validator
+from fastapi import Header, FastAPI, HTTPException
 
 app = FastAPI()
 
+# send the sms verify code via ippanel.com webservice
 def send_sms_verify(to, code):
 	url = "http://ippanel.com:8080"
 	key = "xxxxxxxxxxxx"
@@ -75,9 +76,11 @@ async def register(user: User):
 	cursor.execute(f"SELECT * FROM users WHERE phone_number='{user.phone_number}'")
 	if cursor.fetchone() is not None:
 		raise HTTPException(status_code=400, detail="Phone number already exists.")
+
 	# insert the user into the database
-	cursor.execute(f"INSERT INTO users (name, phone_number, city, role) VALUES ('{user.name}', '{user.phone_number}', '{user.city}', 0)")
+	cursor.execute(f"INSERT INTO users (name, phone_number, role, city) VALUES ('{user.name}', '{user.phone_number}', 0, '{user.city}')")
 	conn.commit()
+
 	return {"message": "User created successfully."}
 
 # define the login route
@@ -90,7 +93,6 @@ async def login(login: Login):
 
 	# generate a random verify code
 	verify_code = random.randint(1000, 9999)
-	print("code:", verify_code)
 
 	# insert the verify code into the auth table
 	cursor.execute(f"INSERT INTO auth (phone_number, verify_code) VALUES ('{login.phone_number}', '{verify_code}')")
@@ -116,6 +118,7 @@ async def auth(auth: Auth):
 	# update the auth table with the token
 	cursor.execute(f"UPDATE auth SET token='{token}' WHERE phone_number='{auth.phone_number}' AND verify_code='{auth.verify_code}'")
 	conn.commit()
+
 	return {"message": "Session activated.", "token": token}
 
 # define the panel route
@@ -136,10 +139,33 @@ async def panel(x_token: str = Header(None)):
 		raise HTTPException(status_code=400, detail="User not found.")
 
 	# return the name of the user
-	if user[3] == 1:
+	if user[2] == 1:
 		return {"admin": True, "name": user[0], "message": f"Welcome {user[0]}."}
 	else:
 		return {"admin": False, "name": user[0], "message": f"Welcome {user[0]}."}
+
+@app.get("/whoiam")
+async def whoiam(x_token: str = Header(None)):
+	# check if the token is valid
+	cursor.execute(f"SELECT * FROM auth WHERE token='{x_token}'")
+	auth = cursor.fetchone()
+	if auth is None:
+		raise HTTPException(status_code=400, detail="Invalid token.")
+	phone_number = auth[0]
+
+	# get user info from the users table
+	cursor.execute(f"SELECT * FROM users WHERE phone_number='{phone_number}'")
+	user = cursor.fetchone()
+
+	if user is None:
+		raise HTTPException(status_code=400, detail="User not found.")
+
+	# return the role of the user
+	print(user)
+	if user[2] == 1:
+		return {"admin": True}
+	else:
+		return {"admin": False}
 
 @app.get("/hi")
 async def hi():
