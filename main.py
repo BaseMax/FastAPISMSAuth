@@ -1,10 +1,28 @@
 from fastapi import Header, FastAPI, HTTPException
 from pydantic import BaseModel,validator
+import random
 import sqlite3
 import uuid
 import requests
 
 app = FastAPI()
+
+def send_sms_verify(to, code):
+	key = "6NlNKHn4KJ8ykLDuvxo-uNN4QJSUXAEHGhtqAAT00-4="
+	number = "983000505"
+	url = "http://ippanel.com:8080"
+	pattern_id = 'wwdv8cawpl'
+	params = {
+		'apikey': key,
+		'pid': pattern_id,
+		'fnum': number,
+		'tnum': to,
+		'p1': 'verification-code',
+		'v1': code
+	}
+	response = requests.get(url, params=params)
+	print(response.text)
+	return True
 
 # define the User model for validation
 class User(BaseModel):
@@ -25,6 +43,10 @@ class User(BaseModel):
 		if not v.strip():
 			raise ValueError("Name cannot be empty.")
 		return v
+
+# define the Login model for validation
+class Login(BaseModel):
+	phone_number: str
 
 # define the Auth model for validation
 class Auth(BaseModel):
@@ -59,21 +81,23 @@ async def register(user: User):
 
 # define the login route
 @app.post("/login")
-async def login(auth: Auth):
+async def login(login: Login):
 	# check if the phone number exists in the database
-	cursor.execute(f"SELECT * FROM users WHERE phone_number='{auth.phone_number}'")
+	cursor.execute(f"SELECT * FROM users WHERE phone_number='{login.phone_number}'")
 	if cursor.fetchone() is None:
 		raise HTTPException(status_code=400, detail="Phone number not found.")
 	# generate a random verify code
-	verify_code = randint(1000, 9999)
+	verify_code = random.randint(1000, 9999)
+	print("code:", verify_code)
 	# insert the verify code into the auth table
-	cursor.execute(f"INSERT INTO auth (phone_number, verify_code) VALUES ('{auth.phone_number}', '{verify_code}')")
+	cursor.execute(f"INSERT INTO auth (phone_number, verify_code) VALUES ('{login.phone_number}', '{verify_code}')")
 	conn.commit()
 	# send the verify code via SMS
-	response = requests.get(f"https://sms-api.com/send?phone_number={auth.phone_number}&verify_code={verify_code}")
-	if response.status_code != 200:
-		raise HTTPException(status_code=500, detail="Error sending SMS.")
-	return {"message": "Verification code sent successfully."}
+	sms_sent = send_sms_verify("09153221677", verify_code)
+	# send_sms_verify(auth.phone_number, verify_code)
+	if sms_sent:
+		return {"message": "Verification code sent successfully."}
+	raise HTTPException(status_code=500, detail="Error sending SMS.")
 
 # define the auth route
 @app.post("/auth")
