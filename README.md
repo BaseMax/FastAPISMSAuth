@@ -11,6 +11,10 @@ This is a simple example of how to use FastAPI to create a simple authentication
 - `/whoiam`: Get user role
 - `/hi`: Hi
 
+### FastAPI
+
+FastAPI is a modern, fast (high-performance), web framework for building APIs with Python 3.6+ based on standard Python type hints.
+
 ## How to run
 
 ```bash
