@@ -8,10 +8,10 @@ import requests
 app = FastAPI()
 
 def send_sms_verify(to, code):
-	key = "6NlNKHn4KJ8ykLDuvxo-uNN4QJSUXAEHGhtqAAT00-4="
-	number = "983000505"
 	url = "http://ippanel.com:8080"
-	pattern_id = 'wwdv8cawpl'
+	key = "xxxxxxxxxxxx"
+	number = "983000505"
+	pattern_id = 'xxxxxxxx'
 	params = {
 		'apikey': key,
 		'pid': pattern_id,
@@ -21,8 +21,9 @@ def send_sms_verify(to, code):
 		'v1': code
 	}
 	response = requests.get(url, params=params)
-	print(response.text)
-	return True
+	if response.status_code == 200:
+		return True
+	return False
 
 # define the User model for validation
 class User(BaseModel):
