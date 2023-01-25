@@ -4,16 +4,6 @@ import sqlite3
 conn = sqlite3.connect('users.db')
 cursor = conn.cursor()
 
-# create the users table if it doesn't exist
-cursor.execute('''CREATE TABLE IF NOT EXISTS users
-				  (name TEXT, phone_number TEXT, city TEXT)''')
-
-# create the auth table if it doesn't exist
-cursor.execute('''CREATE TABLE IF NOT EXISTS auth
-				  (phone_number TEXT, verify_code INTEGER, token TEXT)''')
-				  
-conn.commit()
-
 # Fetch all users
 sql = "SELECT * FROM `users`"
 cursor.execute(sql)

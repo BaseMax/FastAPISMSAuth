@@ -59,7 +59,7 @@ cursor = conn.cursor()
 
 # create the users table if it doesn't exist
 cursor.execute('''CREATE TABLE IF NOT EXISTS users
-				  (name TEXT, phone_number TEXT, city TEXT)''')
+				  (name TEXT, phone_number TEXT, role INTEGER, city TEXT)''')
 
 # create the auth table if it doesn't exist
 cursor.execute('''CREATE TABLE IF NOT EXISTS auth
@@ -75,7 +75,7 @@ async def register(user: User):
 	if cursor.fetchone() is not None:
 		raise HTTPException(status_code=400, detail="Phone number already exists.")
 	# insert the user into the database
-	cursor.execute(f"INSERT INTO users (name, phone_number, city) VALUES ('{user.name}', '{user.phone_number}', '{user.city}')")
+	cursor.execute(f"INSERT INTO users (name, phone_number, city, role) VALUES ('{user.name}', '{user.phone_number}', '{user.city}', 0)")
 	conn.commit()
 	return {"message": "User created successfully."}
 
@@ -86,18 +86,21 @@ async def login(login: Login):
 	cursor.execute(f"SELECT * FROM users WHERE phone_number='{login.phone_number}'")
 	if cursor.fetchone() is None:
 		raise HTTPException(status_code=400, detail="Phone number not found.")
+
 	# generate a random verify code
 	verify_code = random.randint(1000, 9999)
 	print("code:", verify_code)
+
 	# insert the verify code into the auth table
 	cursor.execute(f"INSERT INTO auth (phone_number, verify_code) VALUES ('{login.phone_number}', '{verify_code}')")
 	conn.commit()
+
 	# send the verify code via SMS
-	sms_sent = send_sms_verify("09153221677", verify_code)
-	# send_sms_verify(auth.phone_number, verify_code)
+	sms_sent = send_sms_verify(login.phone_number, verify_code)
 	if sms_sent:
 		return {"message": "Verification code sent successfully."}
-	raise HTTPException(status_code=500, detail="Error sending SMS.")
+	else:
+		raise HTTPException(status_code=500, detail="Error sending SMS.")
 
 # define the auth route
 @app.post("/auth")
@@ -119,8 +122,24 @@ async def auth(auth: Auth):
 async def panel(x_token: str = Header(None)):
 	# check if the token is valid
 	cursor.execute(f"SELECT * FROM auth WHERE token='{x_token}'")
-	user = cursor.fetchone()
-	if user is None:
+	auth = cursor.fetchone()
+	if auth is None:
 		raise HTTPException(status_code=400, detail="Invalid token.")
+	phone_number = auth[0]
+
+	# get user info from the users table
+	cursor.execute(f"SELECT * FROM users WHERE phone_number='{phone_number}'")
+	user = cursor.fetchone()
+
+	if user is None:
+		raise HTTPException(status_code=400, detail="User not found.")
+
 	# return the name of the user
-	return {"name": user[0]}
+	if user[3] == 1:
+		return {"admin": True, "name": user[0], "message": f"Welcome {user[0]}."}
+	else:
+		return {"admin": False, "name": user[0], "message": f"Welcome {user[0]}."}
+
+@app.get("/hi")
+async def hi():
+	return {"message": "Hi"}

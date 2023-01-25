@@ -1,4 +1,13 @@
+import sys
 import requests
+
+# token = "71e35620-1c80-4bda-bf5f-3dd9a5c67747"
+# token = "71e35620-1c80-4bda-bf5f-3dd9a5c67747xxxxxx"
+# headers = {"X-Token": token}
+# response = requests.get("http://localhost:8000/panel", headers=headers)
+# print(response.text)
+# print(response.json())
+# sys.exit(1)
 
 # define the user data
 phone_number = "09153221677"
@@ -9,7 +18,7 @@ response = requests.post("http://localhost:8000/register", json=user_data)
 print(response.json())
 
 # login with the user's phone number
-login_data = {"phone_number": "12345678922"}
+login_data = {"phone_number": phone_number}
 response = requests.post("http://localhost:8000/login", json=login_data)
 print(response.text)
 print(response.json())
