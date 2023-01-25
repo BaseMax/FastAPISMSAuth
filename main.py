@@ -9,10 +9,12 @@ app = FastAPI()
 
 # send the sms verify code via ippanel.com webservice
 def send_sms_verify(to, code):
-	url = "http://ippanel.com:8080"
+	# Configure the SMS API key and pattern id from ippanel.com
 	key = "xxxxxxxxxxxx"
 	number = "983000505"
 	pattern_id = 'xxxxxxxx'
+
+	url = "http://ippanel.com:8080"
 	params = {
 		'apikey': key,
 		'pid': pattern_id,
